@@ -907,6 +907,10 @@ span.DecNumber {
 span.BinNumber {
   color: var(--number); }
 
+span.DozNumber {
+  color: var(--number);
+}
+
 span.HexNumber {
   color: var(--number); }
 

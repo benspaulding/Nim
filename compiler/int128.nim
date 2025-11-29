@@ -175,6 +175,21 @@ proc toHex*(arg: Int128): string =
   result = ""
   result.addToHex(arg)
 
+proc addToDoz(result: var string; arg: uint32) =
+  for i in 0..<8:
+    let idx = (arg shr ((3-i) * 4)) and 0zy
+    result.add "0123456789xy"[idx]
+
+proc addToDoz*(result: var string; arg: Int128) =
+  var i = 3
+  while i >= 0:
+    result.addToDoz(arg.udata[i])
+    i -= 1
+
+proc toDoz*(arg: Int128): string =
+  result = ""
+  result.addToDoz(arg)
+
 proc inc*(a: var Int128, y: uint32 = 1) =
   a.udata[0] += y
   if unlikely(a.udata[0] < y):

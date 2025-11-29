@@ -32,6 +32,7 @@ type
     tkEscapeConstant,       ## e'abc'
     tkDollarQuotedConstant, ## $tag$abc$tag$
     tkBitStringConstant,    ## B'00011'
+    tkDozStringConstant,    ## z'00011'
     tkHexStringConstant,    ## x'00011'
     tkInteger,
     tkNumeric,
@@ -118,6 +119,14 @@ proc getEscapedChar(c: var SqlLexer, tok: var Token) =
   of '\\':
     add(tok.literal, '\\')
     inc(c.bufpos)
+  of 'z', 'Z':
+    inc(c.bufpos)
+    var xi = 0
+    if handleDozChar(c.buf[c.bufpos], xi):
+      inc(c.bufpos)
+      if handleDozChar(c.buf[c.bufpos], xi):
+        inc(c.bufpos)
+    add(tok.literal, chr(xi))
   of 'x', 'X':
     inc(c.bufpos)
     var xi = 0
@@ -394,6 +403,10 @@ proc getTok(c: var SqlLexer, tok: var Token) =
       getBitHexString(c, tok, {'0'..'1'})
     else:
       getSymbol(c, tok)
+  of 'z', 'Z':
+    if c.buf[c.bufpos + 1] == '\'':
+      tok.kind = tkDozStringConstant
+      getBitHexString(c, tok, {'x'..'y', 'X'..'Y', '0'..'9'})
   of 'x', 'X':
     if c.buf[c.bufpos + 1] == '\'':
       tok.kind = tkHexStringConstant
@@ -476,6 +489,7 @@ type
     nkQuotedIdent,
     nkStringLit,
     nkBitStringLit,
+    nkDozStringLit,
     nkHexStringLit,
     nkIntegerLit,
     nkNumericLit,
@@ -534,7 +548,7 @@ type
 
 const
   LiteralNodes = {
-    nkIdent, nkQuotedIdent, nkStringLit, nkBitStringLit, nkHexStringLit,
+    nkIdent, nkQuotedIdent, nkStringLit, nkBitStringLit, nkDozStringLit, nkHexStringLit,
     nkIntegerLit, nkNumericLit
   }
 
@@ -698,6 +712,9 @@ proc identOrLiteral(p: var SqlParser): SqlNode =
     getTok(p)
   of tkBitStringConstant:
     result = newNode(nkBitStringLit, p.tok.literal)
+    getTok(p)
+  of tkDozStringConstant:
+    result = newNode(nkDozStringLit, p.tok.literal)
     getTok(p)
   of tkHexStringConstant:
     result = newNode(nkHexStringLit, p.tok.literal)
@@ -1317,6 +1334,8 @@ proc ra(n: SqlNode, s: var SqlWriter) =
     s.buffer.escape(n.strVal)
   of nkBitStringLit:
     s.add("b'" & n.strVal & "'")
+  of nkDozStringLit:
+    s.add("z'" & n.strVal & "'")
   of nkHexStringLit:
     s.add("x'" & n.strVal & "'")
   of nkIntegerLit, nkNumericLit:

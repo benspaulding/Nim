@@ -26,7 +26,7 @@ macro printf(formatString: string{lit}, args: varargs[typed]): untyped =
   for c in tokenize(formatString.strVal):
     var expectedType = case c
       of 'c': getType(bindSym"char")
-      of 'd', 'i', 'x', 'X': getType(bindSym"int")
+      of 'd', 'i', 'z', 'Z', 'x', 'X': getType(bindSym"int")
       of 'f', 'e', 'E', 'g', 'G': getType(bindSym"float")
       of 's': getType(bindSym"string")
       of 'p': getType(bindSym"pointer")

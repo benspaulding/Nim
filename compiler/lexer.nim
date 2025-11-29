@@ -92,7 +92,7 @@ type
   NumericalBase* = enum
     base10,                   # base10 is listed as the first element,
                               # so that it is the correct default value
-    base2, base8, base16
+    base2, base8, base12, base16
 
   TokenSpacing* = enum
     tsLeading, tsTrailing, tsEof
@@ -322,7 +322,7 @@ proc getNumber(L: var Lexer, result: var Token) =
     numDigits = 0
   const
     # 'c', 'C' is deprecated
-    baseCodeChars = {'X', 'x', 'o', 'b', 'B', 'c', 'C'}
+    baseCodeChars = {'X', 'x', 'Z', 'z', 'o', 'b', 'B', 'c', 'C'}
     literalishChars = baseCodeChars + {'A'..'F', 'a'..'f', '0'..'9', '_', '\''}
     floatTypes = {tkFloatLit, tkFloat32Lit, tkFloat64Lit, tkFloat128Lit}
   result.tokType = tkIntLit   # int literal until we know better
@@ -360,6 +360,9 @@ proc getNumber(L: var Lexer, result: var Token) =
     of 'x', 'X':
       eatChar(L, result, 'x')
       numDigits = matchUnderscoreChars(L, result, {'0'..'9', 'a'..'f', 'A'..'F'})
+    of 'z', 'Z':
+      eatChar(L, result, 'z')
+      numDigits = matchUnderscoreChars(L, result, {'0'..'9', 'x'..'y', 'X'..'Y'})
     of 'o':
       eatChar(L, result, 'o')
       numDigits = matchUnderscoreChars(L, result, {'0'..'7'})
@@ -454,6 +457,23 @@ proc getNumber(L: var Lexer, result: var Token) =
             if L.buf[pos] != '_':
               xi = `shl`(xi, 3) or (ord(L.buf[pos]) - ord('0'))
             inc(pos)
+        of 'z', 'Z':
+          result.base = base12
+          while pos < endpos:
+            case L.buf[pos]
+            of '_':
+              inc(pos)
+            of '0'..'9':
+              xi = `shl`(xi, 4) or (ord(L.buf[pos]) - ord('0'))
+              inc(pos)
+            of 'x'..'y':
+              xi = `shl`(xi, 4) or (ord(L.buf[pos]) - ord('x') + 10)
+              inc(pos)
+            of 'X'..'Y':
+              xi = `shl`(xi, 4) or (ord(L.buf[pos]) - ord('X') + 10)
+              inc(pos)
+            else:
+              break
         of 'x', 'X':
           result.base = base16
           while pos < endpos:
@@ -584,6 +604,31 @@ proc handleHexChar(L: var Lexer, xi: var int; position: range[0..4]) =
     # Need to progress for `nim check`
     inc(L.bufpos)
 
+proc handleDozChar(L: var Lexer, xi: var int; position: range[0..4]) =
+  template invalid() =
+    lexMessage(L, errGenerated,
+      "expected a dozenal digit, but found: " & L.buf[L.bufpos] &
+        "; maybe prepend with 0")
+
+  case L.buf[L.bufpos]
+  of '0'..'9':
+    xi = (xi shl 4) or (ord(L.buf[L.bufpos]) - ord('0'))
+    inc(L.bufpos)
+  of 'x'..'y':
+    xi = (xi shl 4) or (ord(L.buf[L.bufpos]) - ord('x') + 10)
+    inc(L.bufpos)
+  of 'X'..'Y':
+    xi = (xi shl 4) or (ord(L.buf[L.bufpos]) - ord('X') + 10)
+    inc(L.bufpos)
+  of '"', '\'':
+    if position <= 1: invalid()
+    # do not progress the bufpos here.
+    if position == 0: inc(L.bufpos)
+  else:
+    invalid()
+    # Need to progress for `nim check`
+    inc(L.bufpos)
+
 proc handleDecChars(L: var Lexer, xi: var int) =
   while L.buf[L.bufpos] in {'0'..'9'}:
     xi = (xi * 10) + (ord(L.buf[L.bufpos]) - ord('0'))
@@ -673,6 +718,12 @@ proc getEscapedChar(L: var Lexer, tok: var Token) =
     var xi = 0
     handleHexChar(L, xi, 1)
     handleHexChar(L, xi, 2)
+    tok.literal.add(chr(xi))
+  of 'z', 'Z':
+    inc(L.bufpos)
+    var xi = 0
+    handleDozChar(L, xi, 1)
+    handleDozChar(L, xi, 2)
     tok.literal.add(chr(xi))
   of 'u', 'U':
     if tok.tokType == tkCharLit:

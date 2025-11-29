@@ -159,6 +159,7 @@
 \newcommand{\spanDecNumber}[1]{\textbf{\textcolor{darkgray}{#1}}}
 \newcommand{\spanBinNumber}[1]{\textbf{\textcolor{darkgray}{#1}}}
 \newcommand{\spanHexNumber}[1]{\textbf{\textcolor{darkgray}{#1}}}
+\newcommand{\spanDozNumber}[1]{\textbf{\textcolor{darkgray}{#1}}}
 \newcommand{\spanOctNumber}[1]{\textbf{\textcolor{darkgray}{#1}}}
 \newcommand{\spanFloatNumber}[1]{\textbf{\textcolor{darkgray}{#1}}}
 \newcommand{\spanIdentifier}[1]{#1}

@@ -69,7 +69,7 @@ type
     langNone, langNim, langCpp, langCsharp, langC, langJava,
     langYaml, langPython, langCmd, langConsole
   TokenClass* = enum
-    gtEof, gtNone, gtWhitespace, gtDecNumber, gtBinNumber, gtHexNumber,
+    gtEof, gtNone, gtWhitespace, gtDecNumber, gtBinNumber, gtHexNumber, gtDozNumber,
     gtOctNumber, gtFloatNumber, gtIdentifier, gtKeyword, gtStringLit,
     gtLongStringLit, gtCharLit, gtEscapeSequence, # escape sequence like \xff
     gtOperator, gtPunctuation, gtComment, gtLongComment, gtRegularExpression,
@@ -91,7 +91,7 @@ const
     "Nim", "cpp", "csharp", "C", "Java", "Yaml", "Python", "Cmd", "Console"]
     ## list of languages spelled with alpabetic characters
   tokenClassToStr*: array[TokenClass, string] = ["Eof", "None", "Whitespace",
-    "DecNumber", "BinNumber", "HexNumber", "OctNumber", "FloatNumber",
+    "DecNumber", "BinNumber", "HexNumber", "DozNumber", "OctNumber", "FloatNumber",
     "Identifier", "Keyword", "StringLit", "LongStringLit", "CharLit",
     "EscapeSequence", "Operator", "Punctuation", "Comment", "LongComment",
     "RegularExpression", "TagStart", "TagEnd", "Key", "Value", "RawData",
@@ -194,6 +194,7 @@ proc isKeyword(x: openArray[string], y: string): int =
 proc nimNextToken(g: var GeneralTokenizer, keywords: openArray[string] = @[]) =
   const
     hexChars = {'0'..'9', 'A'..'F', 'a'..'f', '_'}
+    dozChars = {'0'..'9', 'X'..'Y', 'x'..'y', '_'}
     octChars = {'0'..'7', '_'}
     binChars = {'0'..'1', '_'}
     SymChars = {'a'..'z', 'A'..'Z', '0'..'9', '\x80'..'\xFF'}
@@ -208,6 +209,10 @@ proc nimNextToken(g: var GeneralTokenizer, keywords: openArray[string] = @[]) =
         inc(pos)
         if g.buf[pos] in hexChars: inc(pos)
         if g.buf[pos] in hexChars: inc(pos)
+      of 'z', 'Z':
+        inc(pos)
+        if g.buf[pos] in dozChars: inc(pos)
+        if g.buf[pos] in dozChars: inc(pos)
       of '0'..'9':
         while g.buf[pos] in {'0'..'9'}: inc(pos)
       of '\0':
@@ -316,6 +321,11 @@ proc nimNextToken(g: var GeneralTokenizer, keywords: openArray[string] = @[]) =
         inc(pos)
         while g.buf[pos] in hexChars: inc(pos)
         pos = nimNumberPostfix(g, pos)
+      of 'z', 'Z':
+        g.kind = gtDozNumber
+        inc(pos)
+        while g.buf[pos] in dozChars: inc(pos)
+        pos = nimNumberPostfix(g, pos)
       of 'o', 'O':
         g.kind = gtOctNumber
         inc(pos)
@@ -403,6 +413,7 @@ proc generalNumber(g: var GeneralTokenizer, position: int): int =
 proc generalStrLit(g: var GeneralTokenizer, position: int): int =
   const
     decChars = {'0'..'9'}
+    dozChars = {'0'..'9', 'X'..'Y', 'x'..'y'}
     hexChars = {'0'..'9', 'A'..'F', 'a'..'f'}
   var pos = position
   g.kind = gtStringLit
@@ -419,6 +430,10 @@ proc generalStrLit(g: var GeneralTokenizer, position: int): int =
         break
       of '0'..'9':
         while g.buf[pos] in decChars: inc(pos)
+      of 'z', 'Z':
+        inc(pos)
+        if g.buf[pos] in dozChars: inc(pos)
+        if g.buf[pos] in dozChars: inc(pos)
       of 'x', 'X':
         inc(pos)
         if g.buf[pos] in hexChars: inc(pos)
@@ -441,6 +456,7 @@ proc clikeNextToken(g: var GeneralTokenizer, keywords: openArray[string],
                     flags: TokenizerFlags) =
   const
     hexChars = {'0'..'9', 'A'..'F', 'a'..'f'}
+    dozChars = {'0'..'9', 'X'..'Y', 'x'..'y'}
     octChars = {'0'..'7'}
     binChars = {'0'..'1'}
     symChars = {'A'..'Z', 'a'..'z', '0'..'9', '_', '\x80'..'\xFF'}
@@ -458,6 +474,10 @@ proc clikeNextToken(g: var GeneralTokenizer, keywords: openArray[string],
           inc(pos)
           if g.buf[pos] in hexChars: inc(pos)
           if g.buf[pos] in hexChars: inc(pos)
+        of 'z', 'Z':
+          inc(pos)
+          if g.buf[pos] in dozChars: inc(pos)
+          if g.buf[pos] in dozChars: inc(pos)
         of '0'..'9':
           while g.buf[pos] in {'0'..'9'}: inc(pos)
         of '\0':
@@ -529,6 +549,10 @@ proc clikeNextToken(g: var GeneralTokenizer, keywords: openArray[string],
       of 'x', 'X':
         inc(pos)
         while g.buf[pos] in hexChars: inc(pos)
+        if g.buf[pos] in {'A'..'Z', 'a'..'z'}: inc(pos)
+      of 'z', 'Z':
+        inc(pos)
+        while g.buf[pos] in dozChars: inc(pos)
         if g.buf[pos] in {'A'..'Z', 'a'..'z'}: inc(pos)
       of '0'..'7':
         inc(pos)

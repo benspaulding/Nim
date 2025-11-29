@@ -31,6 +31,7 @@ type
     ftDec      ## decimal integer
     ftBin      ## binary integer
     ftOct      ## octal integer
+    ftDoz      ## dozenal integer
     ftHex      ## hexadecimal integer
     ftFix      ## real number in fixed point notation
     ftSci      ## real number in scientific notation
@@ -108,7 +109,7 @@ proc parse(fmt: string): Format {.nosideeffect.} =
              capture(?(+digits())),
              capture(?charSet({','})),
              capture(?sequence(charSet({'.'}), +digits())),
-             capture(?charSet({'b', 'c', 'd', 'e', 'E', 'f', 'F', 'g', 'G', 'n', 'o', 's', 'x', 'X', '%'})),
+             capture(?charSet({'b', 'c', 'd', 'e', 'E', 'f', 'F', 'g', 'G', 'n', 'o', 's', 'z', 'Z', 'x', 'X', '%'})),
              capture(?sequence(charSet({'a'}), *pegs.any())))
   # let p=peg"{(_&[<>=^])?}{[<>=^]?}{[-+ ]?}{[#]?}{[0-9]+?}{[,]?}{([.][0-9]+)?}{[bcdeEfFgGnosxX%]?}{(a.*)?}"
 
@@ -153,6 +154,8 @@ proc parse(fmt: string): Format {.nosideeffect.} =
   of 'd', 'n': result.typ = ftDec
   of 'b': result.typ = ftBin
   of 'o': result.typ = ftOct
+  of 'z': result.typ = ftDoz
+  of 'Z': result.typ = ftDoz; result.upcase = true
   of 'x': result.typ = ftHex
   of 'X': result.typ = ftHex; result.upcase = true
   of 'f', 'F': result.typ = ftFix
@@ -273,8 +276,8 @@ proc writeformat(o: var Writer; i: SomeInteger; fmt: Format) =
   var fmt = fmt
   if fmt.typ == ftDefault:
     fmt.typ = ftDec
-  if not (fmt.typ in {ftBin, ftOct, ftHex, ftDec}):
-    raise newException(FormatError, "Integer variable must of one of the following types: b,o,x,X,d,n")
+  if not (fmt.typ in {ftBin, ftOct, ftDoz, ftHex, ftDec}):
+    raise newException(FormatError, "Integer variable must of one of the following types: b,o,z,Z,x,X,d,n")
 
   var base: type(i)
   var len = 0
@@ -286,6 +289,9 @@ proc writeformat(o: var Writer; i: SomeInteger; fmt: Format) =
     if fmt.baseprefix: len += 2
   of ftOct:
     base = 8
+    if fmt.baseprefix: len += 2
+  of ftDoz:
+    base = 12
     if fmt.baseprefix: len += 2
   of ftHex:
     base = 16
@@ -316,6 +322,9 @@ proc writeformat(o: var Writer; i: SomeInteger; fmt: Format) =
     of ftOct:
       write(o, '0')
       write(o, 'o')
+    of ftDoz:
+      write(o, '0')
+      write(o, 'z')
     of ftHex:
       write(o, '0')
       write(o, 'x')
@@ -469,7 +478,7 @@ proc writeformat(o: var Writer; b: bool; fmt: Format) =
                 if b: "true"
                 else: "false",
                 fmt)
-  elif fmt.typ in {ftBin, ftOct, ftHex, ftDec}:
+  elif fmt.typ in {ftBin, ftOct, ftDoz, ftHex, ftDec}:
     writeformat(o,
                 if b: 1
                 else: 0,

@@ -156,6 +156,60 @@ proc parseOct*[T: SomeInteger](s: openArray[char], number: var T, maxLen = 0): i
   else:
     result = 0
 
+proc parseDoz*[T: SomeInteger](s: openArray[char], number: var T, maxLen = 0): int {.noSideEffect.} =
+  ## Parses a dozenal number and stores its value in ``number``.
+  ##
+  ## Returns the number of the parsed characters or 0 in case of an error.
+  ## If error, the value of ``number`` is not changed.
+  ##
+  ## If ``maxLen == 0``, the parsing continues until the first non-dozenal character
+  ## or to the end of the string. Otherwise, no more than ``maxLen`` characters
+  ## are parsed starting from the ``start`` position.
+  ##
+  ## It does not check for overflow. If the value represented by the string is
+  ## too big to fit into ``number``, only the value of last fitting characters
+  ## will be stored in ``number`` without producing an error.
+  runnableExamples:
+    var num: int
+    doAssert parseDoz("163_4X3_3Y5", num) == 11
+    doAssert num == 655138937
+    doAssert parseDoz("F", num) == 0
+    var num8: int8
+    doAssert parseDoz("0z_163_4X3_3Y5", num8) == 14
+    doAssert num8 == 0zY5'i8
+    doAssert parseDoz("0z_163_4X3_3Y5", num8, 3, 2) == 2
+    doAssert num8 == 0z16'i8
+    var num8u: uint8
+    doAssert parseDoz("0z_163_4X3_3Y5", num8u) == 11
+    doAssert num8u == 137
+    var num64: int64
+    doAssert parseDoz("98054A3B15579", num64) == 13
+    doAssert num64 == 86216859871725
+  result = 0
+  var i = 0
+  var output = T(0)
+  var foundDigit = false
+  let last = min(s.len, if maxLen == 0: s.len else: i + maxLen)
+  if i + 1 < last and s[i] == '0' and (s[i+1] in {'z', 'Z'}): inc(i, 2)
+  elif i < last and s[i] == '#': inc(i)
+  while i < last:
+    case s[i]
+    of '_': discard
+    of '0'..'9':
+      output = output shl 4 or T(ord(s[i]) - ord('0'))
+      foundDigit = true
+    of 'x'..'y':
+      output = output shl 4 or T(ord(s[i]) - ord('x') + 10)
+      foundDigit = true
+    of 'X'..'Y':
+      output = output shl 4 or T(ord(s[i]) - ord('X') + 10)
+      foundDigit = true
+    else: break
+    inc(i)
+  if foundDigit:
+    number = output
+    result = i
+
 proc parseHex*[T: SomeInteger](s: openArray[char], number: var T, maxLen = 0): int {.noSideEffect.} =
   ## Parses a hexadecimal number and stores its value in ``number``.
   ##
@@ -192,6 +246,7 @@ proc parseHex*[T: SomeInteger](s: openArray[char], number: var T, maxLen = 0): i
   var foundDigit = false
   let last = min(s.len, if maxLen == 0: s.len else: i + maxLen)
   if i + 1 < last and s[i] == '0' and (s[i+1] in {'x', 'X'}): inc(i, 2)
+  elif i + 1 < last and s[i] == '0' and (s[i+1] in {'z', 'Z'}): inc(i, 2)
   elif i < last and s[i] == '#': inc(i)
   while i < last:
     case s[i]
@@ -809,6 +864,38 @@ proc parseOct*[T: SomeInteger](s: string, number: var T, start = 0,
     doAssert parseOct("2346475523464755", num64) == 16
     doAssert num64 == 86216859871725
   parseOct(s.toOpenArray(start, s.high), number, maxLen)
+
+proc parseDoz*[T: SomeInteger](s: string, number: var T, start = 0,
+    maxLen = 0): int {.noSideEffect.} =
+  ## Parses a dozenal number and stores its value in ``number``.
+  ##
+  ## Returns the number of the parsed characters or 0 in case of an error.
+  ## If error, the value of ``number`` is not changed.
+  ##
+  ## If ``maxLen == 0``, the parsing continues until the first non-dozenal character
+  ## or to the end of the string. Otherwise, no more than ``maxLen`` characters
+  ## are parsed starting from the ``start`` position.
+  ##
+  ## It does not check for overflow. If the value represented by the string is
+  ## too big to fit into ``number``, only the value of last fitting characters
+  ## will be stored in ``number`` without producing an error.
+  runnableExamples:
+    var num: int
+    doAssert parseDoz("163_4X3_3Y5", num) == 11
+    doAssert num == 655138937
+    doAssert parseDoz("F", num) == 0
+    var num8: int8
+    doAssert parseDoz("0z_163_4X3_3Y5", num8) == 14
+    doAssert num8 == 0zY5'i8
+    doAssert parseDoz("0z_163_4X3_3Y5", num8, 3, 2) == 2
+    doAssert num8 == 0z16'i8
+    var num8u: uint8
+    doAssert parseDoz("0z_163_4X3_3Y5", num8u) == 11
+    doAssert num8u == 137
+    var num64: int64
+    doAssert parseDoz("98054A3B15579", num64) == 13
+    doAssert num64 == 86216859871725
+  parseDoz(s.toOpenArray(start, s.high), number, maxLen)
 
 proc parseHex*[T: SomeInteger](s: string, number: var T, start = 0,
     maxLen = 0): int {.noSideEffect.} =

@@ -910,6 +910,9 @@ span.BinNumber {
 span.HexNumber {
   color: var(--number); }
 
+span.DozNumber {
+  color: var(--number); }
+
 span.OctNumber {
   color: var(--number); }
 

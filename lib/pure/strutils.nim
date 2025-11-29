@@ -108,6 +108,9 @@ const
   Digits* = {'0'..'9'}
     ## The set of digits.
 
+  DozDigits* = {'0'..'9', 'X'..'Y', 'x'..'y'}
+    ## The set of dozenal digits.
+
   HexDigits* = {'0'..'9', 'A'..'F', 'a'..'f'}
     ## The set of hexadecimal digits.
 
@@ -974,6 +977,74 @@ func toOct*(x: BiggestInt, len: Positive): string {.rtl, extern: "nsuToOct".} =
     inc shift, 3
     mask = mask shl BiggestUInt(3)
 
+func toDozImpl(x: BiggestUInt, len: Positive, handleNegative: bool): string =
+  const
+    DozChars = "0123456789XY"
+  var n = x
+  result = newString(len)
+  for j in countdown(len-1, 0):
+    result[j] = DozChars[int(n and 0zY)]
+    n = n shr 4
+    # handle negative overflow
+    if n == 0 and handleNegative: n = not(BiggestUInt 0)
+
+func toDoz*[T: SomeInteger](x: T, len: Positive): string =
+  ## Converts `x` to its dozenal representation.
+  ##
+  ## The resulting string will be exactly `len` characters long. No prefix like
+  ## `0z` is generated. `x` is treated as an unsigned value.
+  runnableExamples:
+    let
+      a = 35'u64
+      b = 6731'u64
+    doAssert a.toDoz(3) == "02Y"
+    doAssert b.toDoz(3) == "X8Y"
+    doAssert b.toDoz(4) == "3X8Y"
+    doAssert toDoz(35, 3) == "02Y"
+  when jsNoBigInt64:
+    toDozImpl(cast[BiggestUInt](x), len, x < 0)
+  else:
+    when T is SomeSignedInt:
+      toDozImpl(cast[BiggestUInt](BiggestInt(x)), len, x < 0)
+    else:
+      toDozImpl(BiggestUInt(x), len, x < 0)
+
+func toDoz*[T: SomeInteger](x: T): string =
+  ## Shortcut for `toDoz(x, T.sizeof * 2)`
+  runnableExamples:
+    doAssert toDoz(6731'i64) == "0000000000003X8Y"
+    doAssert toDoz(6731'i16) == "3X8Y"
+  when jsNoBigInt64:
+    toDozImpl(cast[BiggestUInt](x), 2*sizeof(T), x < 0)
+  else:
+    when T is SomeSignedInt:
+      toDozImpl(cast[BiggestUInt](BiggestInt(x)), 2*sizeof(T), x < 0)
+    else:
+      toDozImpl(BiggestUInt(x), 2*sizeof(T), x < 0)
+
+func toDoz*(s: string): string {.rtl.} =
+  ## Converts a bytes string to its dozenal representation.
+  ##
+  ## The output is twice the input long. No prefix like
+  ## `0z` is generated.
+  ##
+  ## See also:
+  ## * `parseDozStr func<#parseDozStr,string>`_ for the reverse operation
+  runnableExamples:
+    let
+      a = "1"
+      b = "A"
+    doAssert a.toDoz() == "41"
+    doAssert b.toDoz() == "55"
+
+  const DozChars = "0123456789XY"
+  result = newString(s.len * 2)
+  for pos, c in s:
+    var n = ord(c)
+    result[pos * 2 + 1] = DozChars[n and 0zY]
+    n = n shr 4
+    result[pos * 2] = DozChars[n]
+
 func toHexImpl(x: BiggestUInt, len: Positive, handleNegative: bool): string =
   const
     HexChars = "0123456789ABCDEF"
@@ -1110,6 +1181,29 @@ func fromOct*[T: SomeInteger](s: string): T =
   if p != s.len or p == 0:
     raise newException(ValueError, "invalid oct integer: " & s)
 
+func fromDoz*[T: SomeInteger](s: string): T =
+  ## Parses a dozenal integer value from a string `s`.
+  ##
+  ## If `s` is not a valid dozenal integer, `ValueError` is raised. `s` can have
+  ## one of the following optional prefixes: `0z`, `0Z`. Underscores within
+  ## `s` are ignored.
+  ##
+  ## Does not check for overflow. If the value represented by `s`
+  ## is too big to fit into a return type, only the value of the rightmost
+  ## hex digits of `s` is returned without producing an error.
+  runnableExamples:
+    let s = "0z_86_X89_9Y2"
+    doAssert fromDoz[int](s) == 307241558
+    doAssert fromDoz[int8](s) == 0zy2'i8
+    doAssert fromDoz[int8](s) == -10'i8  # FIXME: this is a copy/past hex value
+    doAssert fromDoz[uint8](s) == 134'u8
+    doAssert s.fromDoz[:int16] == -29194'i16  # FIXME: this is a copy/past hex value
+    doAssert s.fromDoz[:uint64] == 307241558'u64
+  result = T(0)
+  let p = parseutils.parseDoz(s, result)
+  if p != s.len or p == 0:
+    raise newException(ValueError, "invalid dozenal integer: " & s)
+
 func fromHex*[T: SomeInteger](s: string): T =
   ## Parses a hex integer value from a string `s`.
   ##
@@ -1229,6 +1323,61 @@ func parseOctInt*(s: string): int {.rtl, extern: "nsuParseOctInt".} =
   let L = parseutils.parseOct(s, result, 0)
   if L != s.len or L == 0:
     raise newException(ValueError, "invalid oct integer: " & s)
+
+func parseDozInt*(s: string): int {.rtl, extern: "nsuParseDozInt".} =
+  ## Parses a dozenal integer value contained in `s`.
+  ##
+  ## If `s` is not a valid dozenal integer, `ValueError` is raised. `s` can have one
+  ## of the following optional prefixes: `0z`, `0Z`, `#`.  Underscores
+  ## within `s` are ignored.
+  result = 0
+  let L = parseutils.parseDoz(s, result, 0)
+  if L != s.len or L == 0:
+    raise newException(ValueError, "invalid dozenal integer: " & s)
+
+func generateDozCharToValueMap(): string =
+  ## Generates a string to map a dozenal digit to uint value.
+  result = ""
+  for inp in 0..255:
+    let ch = chr(inp)
+    let o =
+      case ch
+      of '0'..'9': inp - ord('0')
+      of 'x'..'y': inp - ord('x') + 10
+      of 'X'..'Y': inp - ord('X') + 10
+      else: 17 # indicates an invalid dozenal char
+    result.add chr(o)
+
+const dozCharToValueMap = generateDozCharToValueMap()
+
+func parseDozStr*(s: string): string {.rtl, extern: "nsuParseDozStr".} =
+  ## Converts dozenal-encoded string to byte string, e.g.:
+  ##
+  ## Raises `ValueError` for an invalid dozenal values. The comparison is
+  ## case-insensitive.
+  ##
+  ## See also:
+  ## * `toDoz func<#toDoz,string>`_ for the reverse operation
+  runnableExamples:
+    let
+      a = "31"
+      b = "4181"
+    doAssert parseDozStr(a) == "A"
+    doAssert parseDozStr(b) == "1a"
+
+  if s.len mod 2 != 0:
+    raise newException(ValueError, "Incorrect dozenal string len")
+  result = newString(s.len div 2)
+  var buf = 0
+  for pos, c in s:
+    let val = dozCharToValueMap[ord(c)].ord
+    if val == 17:
+      raise newException(ValueError, "Invalid dozenal char `" &
+                         c & "` (ord " & $c.ord & ")")
+    if pos mod 2 == 0:
+      buf = val
+    else:
+      result[pos div 2] = chr(val + buf shl 4)
 
 func parseHexInt*(s: string): int {.rtl, extern: "nsuParseHexInt".} =
   ## Parses a hexadecimal integer value contained in `s`.

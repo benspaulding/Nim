@@ -35,6 +35,7 @@ substrings starting with ``$``. These constructions are available:
 ``$b``              Matches a binary integer. This uses ``parseutils.parseBin``.
 ``$o``              Matches an octal integer. This uses ``parseutils.parseOct``.
 ``$i``              Matches a decimal integer. This uses ``parseutils.parseInt``.
+``$z``              Matches a dozenal integer. This uses ``parseutils.parseDoz``.
 ``$h``              Matches a hex integer. This uses ``parseutils.parseHex``.
 ``$f``              Matches a floating-point number. Uses ``parseFloat``.
 ``$w``              Matches an ASCII identifier: ``[A-Za-z_][A-Za-z_0-9]*``.
@@ -372,6 +373,12 @@ macro scanf*(input: string; pattern: static[string]; results: varargs[typed]): b
       of 'i':
         if i < results.len and getType(results[i]).typeKind == ntyInt:
           matchBind "parseInt"
+        else:
+          matchError
+        inc i
+      of 'z':
+        if i < results.len and getType(results[i]).typeKind == ntyInt:
+          matchBind "parseDoz"
         else:
           matchError
         inc i

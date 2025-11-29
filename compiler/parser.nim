@@ -601,6 +601,7 @@ proc setBaseFlags(n: PNode, base: NumericalBase) =
   of base10: discard
   of base2: setNodeFlag(n, nfBase2)
   of base8: setNodeFlag(n, nfBase8)
+  of base12: setNodeFlag(n, nfBase12)
   of base16: setNodeFlag(n, nfBase16)
 
 proc parseGStrLit(p: var Parser, a: PNode): PNode =

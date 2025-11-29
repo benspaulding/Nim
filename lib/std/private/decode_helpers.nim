@@ -1,3 +1,33 @@
+proc handleDozChar*(c: char, x: var int): bool {.inline.} =
+  ## Converts `%xx` dozenal to the ordinal number and adds the result to `x`.
+  ## Returns `true` if `c` is dozenal.
+  ##
+  ## When `c` is dozenal, the proc is equal to `x = x shl 4 + doz2Int(c)`.
+  runnableExamples:
+    var x = 0
+    assert handleDozChar('x', x)
+    assert x == 10
+
+    assert handleDozChar('Y', x)
+    assert x == 131 # 10 shl 4 + 11
+
+    assert not handleDozChar('?', x)
+    assert x == 131 # unchanged
+  result = true
+  case c
+  of '0'..'9': x = (x shl 4) or (ord(c) - ord('0'))
+  of 'x'..'y': x = (x shl 4) or (ord(c) - ord('x') + 10)
+  of 'X'..'Y': x = (x shl 4) or (ord(c) - ord('X') + 10)
+  else:
+    result = false
+
+proc handleDozChar*(c: char): int {.inline.} =
+  case c
+  of '0'..'9': result = (ord(c) - ord('0'))
+  of 'x'..'y': result = (ord(c) - ord('x') + 10)
+  of 'X'..'Y': result = (ord(c) - ord('X') + 10)
+  else: result = 0
+
 proc handleHexChar*(c: char, x: var int): bool {.inline.} =
   ## Converts `%xx` hexadecimal to the ordinal number and adds the result to `x`.
   ## Returns `true` if `c` is hexadecimal.

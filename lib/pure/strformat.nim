@@ -237,6 +237,10 @@ The available integer presentation types are:
 `b`                      Binary. Outputs the number in base 2.
 `d`                      Decimal Integer. Outputs the number in base 10.
 `o`                      Octal format. Outputs the number in base 8.
+`z`                      Dozenal format. Outputs the number in base 12, using
+                         lower-case letters for the digits above 9.
+`Z`                      Dozenal format. Outputs the number in base 12, using
+                         uppercase letters for the digits above 9.
 `x`                      Hex format. Outputs the number in base 16, using
                          lower-case letters for the digits above 9.
 `X`                      Hex format. Outputs the number in base 16, using
@@ -482,13 +486,14 @@ proc parseStandardFormatSpecifier*(s: string; start = 0;
 proc toRadix(typ: char): int =
   case typ
   of 'x', 'X': 16
+  of 'z', 'Z': 12
   of 'd', '\0': 10
   of 'o': 8
   of 'b': 2
   else:
     raise newException(ValueError,
       "invalid type in format string for number, expected one " &
-      " of 'x', 'X', 'b', 'd', 'o' but got: " & typ)
+      " of 'x', 'X', 'z', 'Z', 'b', 'd', 'o' but got: " & typ)
 
 proc formatValue*[T: SomeInteger](result: var string; value: T;
                                   specifier: static string) =

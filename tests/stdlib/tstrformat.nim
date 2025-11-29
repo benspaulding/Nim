@@ -437,6 +437,20 @@ proc main() =
     check &"{16:^#7X}", " 0x10  "
     check &"{16:^+#7X}", " +0x10 "
 
+    # Doz tests
+    check &"{0:z}", "0"
+    check &"{-0:z}", "0"
+    check &"{143:z}", "yy"
+    check &"{143:Z}", "YY"
+    check &"{-143:z}", "-yy"
+    check &"{-143:Z}", "-YY"
+    check &"{143:z} miXXyy YYAxx", "yy miXXyy YYAxx"
+    check &"{143:Z} miXXyy YYAxx", "YY miXXyy YYAxx"
+    check &"{143:4z}", "  yy"
+    check &"{143:04z}", "00yy"
+    check &"{-143:4z}", " -yy"
+    check &"{-143:04z}", "-0yy"
+
     # Hex tests
     check &"{0:x}", "0"
     check &"{-0:x}", "0"

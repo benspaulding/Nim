@@ -295,6 +295,7 @@ type
     nfNone,
     nfBase2,    # nfBase10 is default, so not needed
     nfBase8,
+    nfBase12,
     nfBase16,
     nfAllConst, # used to mark complex expressions constant; easy to get rid of
                 # but unfortunately it has measurable impact for compilation
@@ -860,7 +861,7 @@ const
   NilableTypes*: TTypeKinds = {tyPointer, tyCstring, tyRef, tyPtr,
     tyProc, tyError} # TODO
   PtrLikeKinds*: TTypeKinds = {tyPointer, tyPtr} # for VM
-  PersistentNodeFlags*: TNodeFlags = {nfBase2, nfBase8, nfBase16,
+  PersistentNodeFlags*: TNodeFlags = {nfBase2, nfBase8, nfBase12, nfBase16,
                                       nfDotSetter, nfDotField,
                                       nfIsRef, nfIsPtr, nfPreventCg, nfLL,
                                       nfFromTemplate, nfDefaultRefsParam,

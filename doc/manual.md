@@ -528,15 +528,18 @@ Numeric literals
 Numeric literals have the form:
 
     hexdigit = digit | 'A'..'F' | 'a'..'f'
+    dozdigit = digit | 'X'..'Y' | 'x'..'y'
     octdigit = '0'..'7'
     bindigit = '0'..'1'
     unary_minus = '-' # See the section about unary minus
     HEX_LIT = unary_minus? '0' ('x' | 'X' ) hexdigit ( ['_'] hexdigit )*
+    DOZ_LIT = unary_minus? '0' ('z' | 'Z' ) dozdigit ( ['_'] dozdigit )*
     DEC_LIT = unary_minus? digit ( ['_'] digit )*
     OCT_LIT = unary_minus? '0' 'o' octdigit ( ['_'] octdigit )*
     BIN_LIT = unary_minus? '0' ('b' | 'B' ) bindigit ( ['_'] bindigit )*
 
     INT_LIT = HEX_LIT
+            | DOZ_LIT
             | DEC_LIT
             | OCT_LIT
             | BIN_LIT
@@ -556,10 +559,10 @@ Numeric literals have the form:
     FLOAT_LIT = unary_minus? digit (['_'] digit)* (('.' digit (['_'] digit)* [exponent]) |exponent)
     FLOAT32_SUFFIX = ('f' | 'F') ['32']
     FLOAT32_LIT = HEX_LIT '\'' FLOAT32_SUFFIX
-                | (FLOAT_LIT | DEC_LIT | OCT_LIT | BIN_LIT) ['\''] FLOAT32_SUFFIX
+                | (FLOAT_LIT | DOZ_LIT | DEC_LIT | OCT_LIT | BIN_LIT) ['\''] FLOAT32_SUFFIX
     FLOAT64_SUFFIX = ( ('f' | 'F') '64' ) | 'd' | 'D'
     FLOAT64_LIT = HEX_LIT '\'' FLOAT64_SUFFIX
-                | (FLOAT_LIT | DEC_LIT | OCT_LIT | BIN_LIT) ['\''] FLOAT64_SUFFIX
+                | (FLOAT_LIT | DOZ_LIT | DEC_LIT | OCT_LIT | BIN_LIT) ['\''] FLOAT64_SUFFIX
 
     CUSTOM_NUMERIC_LIT = (FLOAT_LIT | INT_LIT) '\'' CUSTOM_NUMERIC_SUFFIX
 

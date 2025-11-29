@@ -389,12 +389,14 @@ proc litAux(g: TSrcGen; n: PNode, x: BiggestInt, size: int): string =
     var y = if size < sizeof(BiggestInt): x and ((1.BiggestInt shl (size*8)) - 1)
             else: x
     result = "0o" & toOct(y, size * 3)
+  elif nfBase12 in n.flags: result = "0z" & toDoz(x, size * 2)
   elif nfBase16 in n.flags: result = "0x" & toHex(x, size * 2)
   else: result = $x
 
 proc ulitAux(g: TSrcGen; n: PNode, x: BiggestInt, size: int): string =
   if nfBase2 in n.flags: result = "0b" & toBin(x, size * 8)
   elif nfBase8 in n.flags: result = "0o" & toOct(x, size * 3)
+  elif nfBase12 in n.flags: result = "0z" & toDoz(x, size * 2)
   elif nfBase16 in n.flags: result = "0x" & toHex(x, size * 2)
   else: result = $cast[BiggestUInt](x)
 
@@ -433,21 +435,21 @@ proc atom(g: TSrcGen; n: PNode): string =
   of nkUInt32Lit: result = ulitAux(g, n, n.intVal, 4) & "\'u32"
   of nkUInt64Lit: result = ulitAux(g, n, n.intVal, 8) & "\'u64"
   of nkFloatLit:
-    if n.flags * {nfBase2, nfBase8, nfBase16} == {}: result = $(n.floatVal)
+    if n.flags * {nfBase2, nfBase8, nfBase12, nfBase16} == {}: result = $(n.floatVal)
     else: result = litAux(g, n, (cast[ptr int64](addr(n.floatVal)))[] , 8)
   of nkFloat32Lit:
-    if n.flags * {nfBase2, nfBase8, nfBase16} == {}:
+    if n.flags * {nfBase2, nfBase8, nfBase12, nfBase16} == {}:
       result = $n.floatVal & "\'f32"
     else:
       f = n.floatVal.float32
       result = litAux(g, n, (cast[ptr int32](addr(f)))[], 4) & "\'f32"
   of nkFloat64Lit:
-    if n.flags * {nfBase2, nfBase8, nfBase16} == {}:
+    if n.flags * {nfBase2, nfBase8, nfBase12, nfBase16} == {}:
       result = $n.floatVal & "\'f64"
     else:
       result = litAux(g, n, (cast[ptr int64](addr(n.floatVal)))[], 8) & "\'f64"
   of nkFloat128Lit:
-    if n.flags * {nfBase2, nfBase8, nfBase16} == {}:
+    if n.flags * {nfBase2, nfBase8, nfBase12, nfBase16} == {}:
       result = $n.floatVal & "\'f128"
     else:
       result = litAux(g, n, (cast[ptr int64](addr(n.floatVal)))[], 8) & "\'f128"

@@ -1450,6 +1450,7 @@ proc genFlags*(s: set[TNodeFlag]; dest: var string) =
     of nfBase2: dest.add "b"
     of nfBase8: dest.add "b0"
     of nfBase16: dest.add "b1"
+    of nfBase12: dest.add "b3"
     of nfAllConst: dest.add "a"
     of nfTransf: dest.add "t"
     of nfNoRewrite: dest.add "r"
@@ -1489,6 +1490,9 @@ proc parse*(t: typedesc[TNodeFlag]; s: string): set[TNodeFlag] =
         inc i
       elif i+1 < s.len and s[i+1] == '2':
         result.incl nfBlockArg
+        inc i
+      elif i+1 < s.len and s[i+1] == '3':
+        result.incl nfBase12
         inc i
       else: result.incl nfBase2
     of 'c': result.incl nfExprCall
