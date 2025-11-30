@@ -177,7 +177,7 @@ proc toHex*(arg: Int128): string =
 
 proc addToDoz(result: var string; arg: uint32) =
   for i in 0..<8:
-    let idx = (arg shr ((3-i) * 4)) and 0zy
+    let idx = (arg shr ((3-i) * 4)) and 0xb
     result.add "0123456789xy"[idx]
 
 proc addToDoz*(result: var string; arg: Int128) =

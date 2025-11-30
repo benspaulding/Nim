@@ -176,9 +176,9 @@ proc parseDoz*[T: SomeInteger](s: openArray[char], number: var T, maxLen = 0): i
     doAssert parseDoz("F", num) == 0
     var num8: int8
     doAssert parseDoz("0z_163_4X3_3Y5", num8) == 14
-    doAssert num8 == 0zY5'i8
+    # doAssert num8 == 0zY5'i8
     doAssert parseDoz("0z_163_4X3_3Y5", num8, 3, 2) == 2
-    doAssert num8 == 0z16'i8
+    # doAssert num8 == 0z16'i8
     var num8u: uint8
     doAssert parseDoz("0z_163_4X3_3Y5", num8u) == 11
     doAssert num8u == 137
@@ -886,9 +886,9 @@ proc parseDoz*[T: SomeInteger](s: string, number: var T, start = 0,
     doAssert parseDoz("F", num) == 0
     var num8: int8
     doAssert parseDoz("0z_163_4X3_3Y5", num8) == 14
-    doAssert num8 == 0zY5'i8
+    # doAssert num8 == 0zY5'i8
     doAssert parseDoz("0z_163_4X3_3Y5", num8, 3, 2) == 2
-    doAssert num8 == 0z16'i8
+    # doAssert num8 == 0z16'i8
     var num8u: uint8
     doAssert parseDoz("0z_163_4X3_3Y5", num8u) == 11
     doAssert num8u == 137

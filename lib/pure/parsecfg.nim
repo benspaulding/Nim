@@ -299,14 +299,14 @@ proc getEscapedChar(c: var CfgParser, tok: var Token) =
       if handleHexChar(c.buf[c.bufpos], xi):
         inc(c.bufpos)
     add(tok.literal, chr(xi))
-  of 'z', 'Z':
-    inc(c.bufpos)
-    var xi = 0
-    if handleDozChar(c.buf[c.bufpos], xi):
-      inc(c.bufpos)
-      if handleDozChar(c.buf[c.bufpos], xi):
-        inc(c.bufpos)
-    add(tok.literal, chr(xi))
+  # of 'z', 'Z':
+  #   inc(c.bufpos)
+  #   var xi = 0
+  #   if handleDozChar(c.buf[c.bufpos], xi):
+  #     inc(c.bufpos)
+  #     if handleDozChar(c.buf[c.bufpos], xi):
+  #       inc(c.bufpos)
+  #   add(tok.literal, chr(xi))
   of '0'..'9':
     var xi = 0
     handleDecChars(c, xi)

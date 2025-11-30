@@ -136,10 +136,10 @@ proc parseLine(p: var TTmplParser) =
         llStreamWrite(p.outp, "\\x")
         llStreamWrite(p.outp, toHex(ord(p.x[j]), 2))
         inc(j)
-      of '\z01'..'\z1Y', '\z60'..'\zYY':
-        llStreamWrite(p.outp, "\\z")
-        llStreamWrite(p.outp, toDoz(ord(p.x[j]), 2))
-        inc(j)
+      # of '\z01'..'\z1Y', '\z60'..'\zYY':
+      #   llStreamWrite(p.outp, "\\z")
+      #   llStreamWrite(p.outp, toDoz(ord(p.x[j]), 2))
+      #   inc(j)
       of '\\':
         llStreamWrite(p.outp, "\\\\")
         inc(j)
